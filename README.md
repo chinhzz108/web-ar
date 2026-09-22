@@ -1,6 +1,6 @@
 # Mầm Book · WebAR image target prototype
 
-This is a Vite + Three.js WebAR image-tracking experience. The default engine is Zappar Universal AR 4.3, which owns the camera/CV pipeline and exposes a pose-aware image anchor. MindAR 1.2.5 remains available as an A/B fallback. The printed card is the only target; the animation is a `THREE.VideoTexture` attached to the tracked planar anchor instead of CSS screen coordinates.
+This is a Vite + Three.js WebAR image-tracking experience. The default engine is Zappar Universal AR 4.3, which runs the GPU/WASM CV pipeline and exposes a pose-aware image anchor. The app opens one rear-camera stream with the browser and passes it to Zappar's `HTMLElementSource`, avoiding a second Android permission flow. MindAR 1.2.5 remains available as an A/B fallback. The printed card is the only target; the animation is a `THREE.VideoTexture` attached to the tracked planar anchor instead of CSS screen coordinates.
 
 ## Architecture
 
@@ -84,8 +84,8 @@ This writes `public/assets/target.zpt`. The current Zappar engine uses its `Came
 ## User flow
 
 1. Tap **Trải nghiệm AR**.
-2. The app checks secure-context/WebGL support and makes an environment-facing `getUserMedia()` permission request.
-3. Zappar starts its rear-camera WebGL pipeline using the high camera profile and searches the trained flat image target.
+2. The app checks secure-context/WebGL support and makes one environment-facing `getUserMedia()` permission request.
+3. The camera stream is passed to Zappar's `HTMLElementSource`; its WebGL/WASM pipeline processes frames and searches the trained flat image target.
 4. When the image anchor is visible, `onVisible` reveals the video plane and calls `video.play()` while muted.
 5. A short interruption is tolerated by the anchor visibility lifecycle; the video is only paused when the tracker reports the anchor not visible.
 6. Sound, replay, and close controls remain available. Replay is the only action that resets `currentTime`.
@@ -143,7 +143,7 @@ Set the production build command to `npm run build` and the output directory to 
 ## Performance choices and limitations
 
 - One target keeps feature matching bounded in both engines; Zappar's `ImageAnchorGroup` owns the tracked pose and the WebGL camera background.
-- The default Zappar engine owns GPU/WASM camera processing; the app does not add another ML model or process camera frames through OpenCV, YOLO, TensorFlow detection, or MediaPipe.
+- The default Zappar engine owns GPU/WASM CV processing; the app does not add another ML model or process camera frames through OpenCV, YOLO, TensorFlow detection, or MediaPipe.
 - The overlay is one `PlaneGeometry` with `MeshBasicMaterial`, no lights, shadows, models, post-processing, or unnecessary scene objects.
 - The animation pauses after a confirmed target loss and keeps its current time through short occlusions.
 - `VideoTexture` is linear-filtered without mipmaps; the MP4 is muted for reliable mobile autoplay.
