@@ -11,7 +11,7 @@ index.html
     ├── src/ar/ARController.js MindAR lifecycle, camera, anchor events
     ├── src/ar/ZapparARController.js current Zappar image-tracking engine
     ├── src/ar/VideoTarget.js   poster/video textures, crop, target plane
-    ├── src/ui/ui.js            landing/scanning/tracking/error/debug states
+    ├── src/ui/ui.js            landing/scanning/tracking/error states
     └── src/styles/main.css     responsive premium UI
 
 public/assets/
@@ -92,16 +92,16 @@ This writes `public/assets/target.zpt`. The current Zappar engine uses its `Came
 
 The target plane is `PlaneGeometry(1, 1145 / 1374)`. The supplied target is 1.20:1 but `animation.mp4` is 1280 × 720 (16:9), so `VideoTarget.fitVideoToTarget()` crops the longer texture dimension with `repeat` and `offset` rather than stretching it. `videoCropX: 0.56` keeps the right-hand “Ghế làng” sign visible; a final 1.20:1 master encode is still recommended because it removes crop ambiguity and gives the cleanest pixel alignment.
 
-## Debug mode
+## Asset check
 
-The panel is enabled automatically in Vite development builds and removed from the production UI. It reports render FPS, target visibility, video playback, negotiated camera resolution, and camera frame rate. `tools/compare-assets.html` is a local-only utility for comparing the target with frame 0 and checking crop choices.
+`tools/compare-assets.html` is a local-only utility for comparing the target with frame 0 and checking crop choices. It is not part of the user-facing AR screen.
 
 ## Mobile testing
 
 - Android Chrome: use a deployed HTTPS preview or the USB localhost path; allow camera access; use the rear camera. Start with the default Zappar URL, then compare `?engine=mindar` on the same phone.
 - iPhone Safari: use HTTPS, allow camera access, keep the full card visible, and use a recent iOS version with WebGL support.
 - Use diffuse light, avoid glare, and keep the complete card inside the scanning frame. The target has natural texture and local contrast, which are useful for planar tracking.
-- If the camera still looks soft, check the debug panel first: the negotiated camera should normally be around `1280 × 720`. A low value means the browser/device rejected the preferred constraint profile and fell back; clean the rear lens and add diffuse light before increasing resolution further.
+- If the camera still looks soft, clean the rear lens, use diffuse light, and keep the target fully inside the frame; browser/device camera constraints can still fall back on older or busy phones.
 - If the phone is on the same Wi-Fi as the computer, run `npm run dev -- --host` and expose the HTTPS Vite port through a trusted HTTPS tunnel or a locally trusted certificate. A plain LAN HTTP URL is not a valid camera origin.
 
 ### Android over USB

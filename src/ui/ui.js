@@ -1,6 +1,6 @@
 const get = (id) => document.getElementById(id);
 
-export function createUI({ showDebug = false } = {}) {
+export function createUI() {
   const elements = {
     app: get('app'),
     landing: get('landing-screen'),
@@ -10,24 +10,14 @@ export function createUI({ showDebug = false } = {}) {
     loadingMessage: get('loading-message'),
     scanner: get('scanner-ui'),
     scanMessage: get('scan-message'),
-    trackingBadge: get('tracking-badge'),
-    instruction: document.querySelector('.ar-instruction'),
     controls: get('ar-controls'),
-    debug: get('debug-panel'),
-    debugFps: get('debug-fps'),
-    debugTarget: get('debug-target'),
-    debugVideo: get('debug-video'),
-    debugCamera: get('debug-camera'),
     errorMessage: get('error-message'),
     soundToggle: get('sound-toggle'),
   };
 
-  if (showDebug) elements.debug.hidden = false;
-
   const setStage = (visible) => {
     elements.arStage.hidden = !visible;
     elements.landing.hidden = visible;
-    if (!visible) elements.app.classList.remove('is-tracking');
   };
 
   return {
@@ -37,7 +27,6 @@ export function createUI({ showDebug = false } = {}) {
       elements.loading.hidden = false;
       elements.loadingMessage.textContent = message;
       elements.scanner.hidden = true;
-      elements.trackingBadge.hidden = true;
       elements.controls.classList.remove('is-visible');
     },
 
@@ -45,18 +34,14 @@ export function createUI({ showDebug = false } = {}) {
       setStage(true);
       elements.loading.hidden = true;
       elements.scanner.hidden = false;
-      elements.trackingBadge.hidden = true;
       elements.scanMessage.textContent = message;
       elements.controls.classList.add('is-visible');
-      elements.app.classList.remove('is-tracking');
     },
 
     showTracking() {
       elements.loading.hidden = true;
       elements.scanner.hidden = true;
-      elements.trackingBadge.hidden = false;
       elements.controls.classList.add('is-visible');
-      elements.app.classList.add('is-tracking');
     },
 
     showPlaybackHint() {
@@ -77,9 +62,7 @@ export function createUI({ showDebug = false } = {}) {
       elements.landing.hidden = false;
       elements.loading.hidden = true;
       elements.scanner.hidden = true;
-      elements.trackingBadge.hidden = true;
       elements.controls.classList.remove('is-visible');
-      elements.app.classList.remove('is-tracking');
     },
 
     setSoundState(muted) {
@@ -87,14 +70,6 @@ export function createUI({ showDebug = false } = {}) {
       elements.soundToggle.setAttribute('aria-label', muted ? 'Bật âm thanh' : 'Tắt âm thanh');
       elements.soundToggle.classList.toggle('is-active', !muted);
       icon.textContent = muted ? '⌁' : '◖';
-    },
-
-    updateDebug(state) {
-      if (!showDebug || !state) return;
-      elements.debugFps.textContent = `${state.fps}`;
-      elements.debugTarget.textContent = state.targetVisible ? 'yes' : 'no';
-      elements.debugVideo.textContent = state.videoPlaying ? 'yes' : 'no';
-      elements.debugCamera.textContent = `${state.cameraResolution}${state.cameraFrameRate ? ` @ ${state.cameraFrameRate} fps` : ''}`;
     },
 
     get soundButton() {

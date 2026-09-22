@@ -4,7 +4,7 @@ import { ARController, ARControllerError } from './ar/ARController.js';
 import { ZapparARController } from './ar/ZapparARController.js';
 import { createUI } from './ui/ui.js';
 
-const ui = createUI({ showDebug: import.meta.env.DEV });
+const ui = createUI();
 const requestedEngine = new URLSearchParams(window.location.search).get('engine');
 const engine = requestedEngine === 'mindar' ? 'mindar' : 'zappar';
 const arContainer = document.getElementById('ar-container');
@@ -101,12 +101,6 @@ ui.soundButton.addEventListener('click', () => {
 resetButton.addEventListener('click', () => {
   arController?.resetAnimation();
 });
-
-if (import.meta.env.DEV) {
-  window.setInterval(() => {
-    ui.updateDebug(arController?.getDebugState());
-  }, 250);
-}
 
 window.addEventListener('pagehide', () => {
   void stopAR();
