@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#101615" />
+    <meta name="description" content="Trải nghiệm Mầm Book AR — đưa camera vào hình ảnh trên thẻ để đánh thức câu chuyện." />
+    <title>Mầm Book · AR</title>
+  </head>
+  <body>
+    <main id="app" class="app">
+      <section id="landing-screen" class="landing-screen" aria-labelledby="landing-title">
+        <div class="landing-glow landing-glow--one" aria-hidden="true"></div>
+        <div class="landing-glow landing-glow--two" aria-hidden="true"></div>
+
+        <header class="landing-header">
+          <div class="brand-lockup" aria-label="Mầm Book">
+            <span class="brand-mark" aria-hidden="true"><span></span></span>
+            <span>
+              <span class="brand-name">Mầm Book</span>
+              <span class="brand-caption">A living page</span>
+            </span>
+          </div>
+          <span class="edition-label">AR / 01</span>
+        </header>
+
+        <div class="landing-content">
+          <div class="landing-copy">
+            <p class="eyebrow">Một tấm thẻ. Một thế giới thức dậy.</p>
+            <h1 id="landing-title">Khi ký ức<br /><em>chuyển động.</em></h1>
+            <p class="landing-description">
+              Đưa camera vào hình ảnh trên thẻ để nhìn thấy câu chuyện tiếp tục sống.
+            </p>
+            <button id="start-ar" class="primary-button" type="button">
+              <span>Trải nghiệm AR</span>
+              <span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+            <p class="landing-note"><span class="status-dot" aria-hidden="true"></span> Hoạt động tốt nhất trên điện thoại</p>
+          </div>
+
+          <div class="hero-card" aria-hidden="true">
+            <div class="hero-card__shine"></div>
+            <img src="/assets/target.jpg" alt="" />
+            <span class="hero-card__stamp">MẦM<br />01</span>
+            <span class="hero-card__hint">Point<br />to reveal</span>
+          </div>
+        </div>
+
+        <footer class="landing-footer">
+          <span>Giữ lại những điều đẹp đẽ</span>
+          <span class="footer-line" aria-hidden="true"></span>
+          <span>© Mầm Book</span>
+        </footer>
+      </section>
+
+      <section id="ar-stage" class="ar-stage" hidden aria-label="Trải nghiệm AR">
+        <div id="ar-container" class="ar-container" aria-hidden="true"></div>
+
+        <div class="ar-overlay">
+          <header class="ar-header">
+            <div class="brand-lockup brand-lockup--light" aria-label="Mầm Book">
+              <span class="brand-mark" aria-hidden="true"><span></span></span>
+              <span>
+                <span class="brand-name">Mầm Book</span>
+                <span class="brand-caption">A living page</span>
+              </span>
+            </div>
+            <span class="ar-mode-label"><span class="status-dot" aria-hidden="true"></span> LIVE AR</span>
+          </header>
+
+          <div id="scanner-ui" class="scanner-ui" aria-live="polite">
+            <div class="scan-frame" aria-hidden="true">
+              <span class="scan-corner scan-corner--tl"></span>
+              <span class="scan-corner scan-corner--tr"></span>
+              <span class="scan-corner scan-corner--bl"></span>
+              <span class="scan-corner scan-corner--br"></span>
+              <span class="scan-line"></span>
+            </div>
+            <p class="scan-kicker">Đang tìm hình ảnh</p>
+            <p id="scan-message" class="scan-message">Đưa camera vào hình ảnh trên thẻ</p>
+          </div>
+
+          <div id="loading-screen" class="loading-screen" hidden>
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <p id="loading-message">Đang chuẩn bị trải nghiệm…</p>
+          </div>
+
+          <div id="tracking-badge" class="tracking-badge" hidden>
+            <span class="tracking-badge__icon" aria-hidden="true">✦</span>
+            <span>Hình ảnh đã được nhận diện</span>
+          </div>
+
+          <div class="ar-bottom-bar">
+            <p class="ar-instruction">Giữ camera ổn định và để toàn bộ hình ảnh nằm trong khung</p>
+            <div id="ar-controls" class="ar-controls" aria-label="Điều khiển AR">
+              <button id="sound-toggle" class="control-button" type="button" aria-label="Bật âm thanh" title="Âm thanh">
+                <span class="control-icon control-icon--sound" aria-hidden="true">⌁</span>
+                <span class="control-label">Âm thanh</span>
+              </button>
+              <button id="reset-animation" class="control-button" type="button" aria-label="Phát lại animation" title="Phát lại animation">
+                <span class="control-icon" aria-hidden="true">↻</span>
+                <span class="control-label">Phát lại</span>
+              </button>
+              <button id="close-ar" class="control-button control-button--close" type="button" aria-label="Đóng AR" title="Đóng AR">
+                <span class="control-icon" aria-hidden="true">×</span>
+                <span class="control-label">Đóng</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <aside id="debug-panel" class="debug-panel" hidden aria-live="off">
+        <p class="debug-title">AR engine debug · dev</p>
+          <dl>
+            <div><dt>FPS</dt><dd id="debug-fps">—</dd></div>
+            <div><dt>Target detected</dt><dd id="debug-target">no</dd></div>
+            <div><dt>Video playing</dt><dd id="debug-video">no</dd></div>
+            <div><dt>Camera</dt><dd id="debug-camera">—</dd></div>
+          </dl>
+        </aside>
+      </section>
+
+      <section id="error-screen" class="error-screen" hidden role="alertdialog" aria-modal="true" aria-labelledby="error-title">
+        <div class="error-card">
+          <span class="error-mark" aria-hidden="true">!</span>
+          <p class="eyebrow">Không thể bắt đầu</p>
+          <h2 id="error-title">Camera chưa sẵn sàng</h2>
+          <p id="error-message" class="error-message">Vui lòng thử lại sau.</p>
+          <div class="error-actions">
+            <button id="retry-ar" class="primary-button" type="button"><span>Thử lại</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+            <button id="back-home" class="text-button" type="button">Về trang đầu</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

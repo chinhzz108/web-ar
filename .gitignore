@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+__pycache__/
+*.py[cod]
+*.log
+*.local
+.DS_Store
+Thumbs.db
+
+# The desktop app keeps the original pasted attachments beside the project;
+# the canonical copies used by the app live under public/assets/.
+a988498a-d922-4ed6-8d6a-2e932b700671.jpg
+c59041de-b9d5-49e0-97aa-871af6b0d7c2.mp4

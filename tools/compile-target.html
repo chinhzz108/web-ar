@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MindAR target compiler</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #111; color: #f5f5f5; }
+      body { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+      label, button, a { display: inline-block; margin-top: 18px; }
+      button, a { padding: 10px 15px; border-radius: 6px; border: 1px solid #9dbb77; background: #d4e7a8; color: #172016; cursor: pointer; text-decoration: none; }
+      button:disabled { cursor: wait; opacity: .55; }
+      #status { min-height: 2em; color: #d4e7a8; }
+      #download { display: none; }
+    </style>
+  </head>
+  <body>
+    <h1>MindAR image target compiler</h1>
+    <p>This build-time helper runs the official MindAR compiler in the browser. The selected image stays on this local page.</p>
+    <label>Target image <input id="image" type="file" accept="image/jpeg,image/png" /></label>
+    <br />
+    <button id="compile" type="button" disabled>Compile target</button>
+    <p id="status" role="status">Choose target.jpg to begin.</p>
+    <a id="download" download="targets.mind">Download targets.mind</a>
+
+    <script type="module">
+      import { Compiler } from '/node_modules/mind-ar/dist/mindar-image.prod.js';
+
+      const imageInput = document.querySelector('#image');
+      const compileButton = document.querySelector('#compile');
+      const status = document.querySelector('#status');
+      const download = document.querySelector('#download');
+      let selectedFile = null;
+
+      imageInput.addEventListener('change', () => {
+        selectedFile = imageInput.files?.[0] ?? null;
+        compileButton.disabled = !selectedFile;
+        download.style.display = 'none';
+        status.textContent = selectedFile ? `${selectedFile.name} selected.` : 'Choose target.jpg to begin.';
+      });
+
+      compileButton.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        compileButton.disabled = true;
+        status.textContent = 'Compiling features… keep this tab open.';
+
+        try {
+          const image = new Image();
+          image.src = URL.createObjectURL(selectedFile);
+          await image.decode();
+
+          const compiler = new Compiler();
+          await compiler.compileImageTargets([image], (progress) => {
+            status.textContent = `Compiling features… ${Math.round(progress)}%`;
+          });
+          const buffer = compiler.exportData();
+          const saveResponse = await fetch('/save-target', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: buffer,
+          });
+          if (!saveResponse.ok) throw new Error('LOCAL_SAVE_FAILED');
+
+          const url = URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
+          download.href = url;
+          download.style.display = 'inline-block';
+          status.textContent = 'Done. targets.mind was saved to public/assets/.';
+        } catch (error) {
+          console.error(error);
+          status.textContent = 'Compilation failed. Check the browser console for details.';
+          compileButton.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

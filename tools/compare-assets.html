@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR asset comparison</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; padding: 24px; background: #11140f; color: #f4f2ea; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    p { color: #b9c0b2; }
+    #meta { padding: 12px; border: 1px solid #384133; border-radius: 10px; background: #1a2017; white-space: pre-wrap; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+    figure { margin: 0; padding: 12px; border: 1px solid #384133; border-radius: 10px; background: #1a2017; }
+    figure > * { display: block; width: 100%; max-height: 70vh; object-fit: contain; background: #050605; }
+    figcaption { margin-top: 8px; color: #b9c0b2; }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>Kiểm tra target và frame đầu video</h1>
+  <p>Trang này chỉ để kiểm tra composition/aspect trước khi chỉnh AR.</p>
+  <div id="meta">Đang đọc metadata…</div>
+  <div class="grid">
+    <figure>
+      <img id="target" src="/assets/target.jpg" alt="Target image">
+      <figcaption>Target image</figcaption>
+    </figure>
+    <figure>
+      <video id="video" src="/assets/animation.mp4" muted playsinline preload="auto"></video>
+      <figcaption>Video element (frame 0)</figcaption>
+    </figure>
+    <figure>
+      <canvas id="frame"></canvas>
+      <figcaption>Frame 0 rendered to canvas</figcaption>
+    </figure>
+    <figure>
+      <canvas id="crop"></canvas>
+      <figcaption>Frame 0 centre-cropped to target ratio</figcaption>
+    </figure>
+    <figure>
+      <canvas id="crop-left"></canvas>
+      <figcaption>Frame 0 left crop</figcaption>
+    </figure>
+    <figure>
+      <canvas id="crop-right"></canvas>
+      <figcaption>Frame 0 right crop</figcaption>
+    </figure>
+    <figure>
+      <canvas id="stretch"></canvas>
+      <figcaption>Frame 0 stretched to target ratio</figcaption>
+    </figure>
+  </div>
+  <script>
+    const target = document.querySelector('#target');
+    const video = document.querySelector('#video');
+    const frame = document.querySelector('#frame');
+    const crop = document.querySelector('#crop');
+    const cropLeft = document.querySelector('#crop-left');
+    const cropRight = document.querySelector('#crop-right');
+    const stretch = document.querySelector('#stretch');
+    const meta = document.querySelector('#meta');
+    const renderFrame = () => {
+      if (!video.videoWidth || !video.videoHeight) return;
+      frame.width = video.videoWidth;
+      frame.height = video.videoHeight;
+      frame.getContext('2d').drawImage(video, 0, 0);
+      const targetRatio = target.naturalWidth / target.naturalHeight;
+      const sourceRatio = video.videoWidth / video.videoHeight;
+      let sx = 0;
+      let sy = 0;
+      let sw = video.videoWidth;
+      let sh = video.videoHeight;
+      if (sourceRatio > targetRatio) {
+        sw = video.videoHeight * targetRatio;
+        sx = (video.videoWidth - sw) / 2;
+      } else {
+        sh = video.videoWidth / targetRatio;
+        sy = (video.videoHeight - sh) / 2;
+      }
+      const drawCrop = (canvas, offset) => {
+        const sourceX = Math.max(0, Math.min(video.videoWidth - sw, offset));
+        canvas.width = Math.round(sw);
+        canvas.height = Math.round(sh);
+        canvas.getContext('2d').drawImage(video, sourceX, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      };
+      drawCrop(crop, sx);
+      drawCrop(cropLeft, 0);
+      drawCrop(cropRight, video.videoWidth - sw);
+      stretch.width = Math.round(video.videoHeight * targetRatio);
+      stretch.height = video.videoHeight;
+      stretch.getContext('2d').drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, stretch.width, stretch.height);
+      const analysisCanvas = document.createElement('canvas');
+      analysisCanvas.width = 320;
+      analysisCanvas.height = Math.round(320 / targetRatio);
+      const analysisContext = analysisCanvas.getContext('2d', { willReadFrequently: true });
+      const targetCanvas = document.createElement('canvas');
+      targetCanvas.width = analysisCanvas.width;
+      targetCanvas.height = analysisCanvas.height;
+      const targetContext = targetCanvas.getContext('2d', { willReadFrequently: true });
+      targetContext.drawImage(target, 0, 0, targetCanvas.width, targetCanvas.height);
+      const targetPixels = targetContext.getImageData(0, 0, targetCanvas.width, targetCanvas.height).data;
+      const score = (name, sourceX, sourceY, sourceWidth, sourceHeight) => {
+        analysisContext.clearRect(0, 0, analysisCanvas.width, analysisCanvas.height);
+        analysisContext.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, analysisCanvas.width, analysisCanvas.height);
+        const pixels = analysisContext.getImageData(0, 0, analysisCanvas.width, analysisCanvas.height).data;
+        let total = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          total += Math.abs(pixels[i] - targetPixels[i]) + Math.abs(pixels[i + 1] - targetPixels[i + 1]) + Math.abs(pixels[i + 2] - targetPixels[i + 2]);
+        }
+        return `${name}=${Math.round(total / (pixels.length / 4) / 3)}`;
+      };
+      const scores = [
+        score('left', 0, 0, sw, sh),
+        score('centre', sx, sy, sw, sh),
+        score('right', video.videoWidth - sw, sy, sw, sh),
+        score('stretch', 0, 0, video.videoWidth, video.videoHeight),
+      ];
+      let bestOffset = 0;
+      let bestValue = Number.POSITIVE_INFINITY;
+      for (let offset = 0; offset <= video.videoWidth - sw; offset += 8) {
+        const value = Number(score('scan', offset, sy, sw, sh).split('=')[1]);
+        if (value < bestValue) {
+          bestValue = value;
+          bestOffset = offset;
+        }
+      }
+      meta.textContent = [
+        `target: ${target.naturalWidth} x ${target.naturalHeight} (ratio ${(target.naturalWidth / target.naturalHeight).toFixed(4)})`,
+        `video: ${video.videoWidth} x ${video.videoHeight} (ratio ${(video.videoWidth / video.videoHeight).toFixed(4)})`,
+        `duration: ${video.duration.toFixed(3)}s`,
+        `pixel difference (lower is closer): ${scores.join(', ')}`,
+        `best scanned crop offset: ${bestOffset}px / ${Math.round(bestOffset / (video.videoWidth - sw) * 100)}% (score ${bestValue})`,
+      ].join('\n');
+    };
+    video.addEventListener('loadedmetadata', () => {
+      video.currentTime = 0;
+      renderFrame();
+    });
+    video.addEventListener('loadeddata', renderFrame);
+    video.addEventListener('seeked', renderFrame);
+    target.addEventListener('load', renderFrame);
+  </script>
+</body>
+</html>
