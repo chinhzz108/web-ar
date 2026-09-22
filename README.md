@@ -114,7 +114,7 @@ adb reverse tcp:5173 tcp:5173
 npm run dev:usb
 ```
 
-Open `http://localhost:5173` on the phone. `localhost` is treated as a trustworthy origin by the browser, while `http://192.168.x.x:5173` over Wi-Fi is not. USB debugging is Android-only; for iPhone use an HTTPS deployment or tunnel.
+Open `http://localhost:5173` on the phone. Use `localhost` rather than `127.0.0.1` so Chrome keeps the camera permission under the expected loopback origin. `localhost` is treated as a trustworthy origin by the browser, while `http://192.168.x.x:5173` over Wi-Fi is not. USB debugging is Android-only; for iPhone use an HTTPS deployment or tunnel.
 
 For one-click startup on Windows, double-click [`start-ar-usb.bat`](start-ar-usb.bat). It checks ADB, starts the USB Vite server, creates the reverse port, and asks Android to open the WebAR URL. Keep the Vite window open while testing.
 

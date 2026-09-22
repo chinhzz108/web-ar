@@ -30,7 +30,7 @@ function getErrorMessage(error) {
     case 'WEBGL_UNSUPPORTED':
       return 'Thiết bị chưa hỗ trợ WebGL cần thiết cho trải nghiệm AR.';
     case 'CAMERA_ACCESS_FAILED':
-      return 'Mầm Book chưa được cấp quyền camera. Hãy bật camera trong cài đặt trình duyệt rồi thử lại.';
+      return 'Camera chưa được cấp quyền hoặc chưa phản hồi. Hãy bấm Cho phép camera trong trình duyệt rồi thử lại.';
     case 'CAMERA_NOT_FOUND':
       return 'Không tìm thấy camera sau trên thiết bị này.';
     case 'CAMERA_BUSY':

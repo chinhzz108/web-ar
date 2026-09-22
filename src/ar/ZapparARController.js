@@ -10,10 +10,88 @@ async function ensureTargetExists(targetUrl) {
   }
 }
 
+function cameraConstraints(cameraConfig) {
+  return {
+    audio: false,
+    video: {
+      ...cameraConfig,
+      facingMode: { ideal: 'environment' },
+    },
+  };
+}
+
+function requestCamera(constraints, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timeoutId = window.setTimeout(() => {
+      settled = true;
+      const error = new Error('CAMERA_PERMISSION_TIMEOUT');
+      error.name = 'NotAllowedError';
+      reject(error);
+    }, timeoutMs);
+
+    navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+      if (settled) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timeoutId);
+      resolve(stream);
+    }).catch((error) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      reject(error);
+    });
+  });
+}
+
+async function openRearCamera(cameraConfig) {
+  try {
+    return await requestCamera(cameraConstraints(cameraConfig));
+  } catch (error) {
+    // Some Android camera HALs reject quality hints even when they can open
+    // the camera. Retry with only the essential rear-camera constraint.
+    if (error?.name !== 'OverconstrainedError') throw error;
+    return requestCamera({
+      audio: false,
+      video: { facingMode: { ideal: 'environment' } },
+    });
+  }
+}
+
+async function createCameraVideo(stream, container) {
+  const video = document.createElement('video');
+  video.muted = true;
+  video.autoplay = true;
+  video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
+  video.setAttribute('aria-hidden', 'true');
+  video.style.position = 'absolute';
+  video.style.width = '1px';
+  video.style.height = '1px';
+  video.style.opacity = '0';
+  video.style.pointerEvents = 'none';
+  video.srcObject = stream;
+  container.appendChild(video);
+  try {
+    await video.play();
+  } catch (error) {
+    video.remove();
+    throw error;
+  }
+  return video;
+}
+
 function classifyZapparError(error) {
   if (error instanceof ARControllerError) return error;
   if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') {
     return new ARControllerError('CAMERA_ACCESS_FAILED', error);
+  }
+  if (error?.name === 'NotReadableError' || error?.name === 'AbortError') {
+    return new ARControllerError('CAMERA_BUSY', error);
   }
   if (error?.message === 'VIDEO_LOAD_FAILED') {
     return new ARControllerError('VIDEO_LOAD_FAILED', error);
@@ -44,6 +122,8 @@ export class ZapparARController {
     this.lastFpsAt = performance.now();
     this.active = false;
     this.resizeHandler = null;
+    this.cameraStream = null;
+    this.cameraVideo = null;
   }
 
   async start() {
@@ -53,6 +133,11 @@ export class ZapparARController {
     if (supportError) throw supportError;
 
     try {
+      // Ask for the native browser camera immediately from the user's tap.
+      // Passing this stream to Zappar avoids a second permission flow that
+      // can stall on Android Chrome.
+      this.cameraStream = await openRearCamera(this.config.camera);
+      this.cameraVideo = await createCameraVideo(this.cameraStream, this.container);
       await ensureTargetExists(this.config.zapparTarget);
 
       this.videoTarget = new VideoTarget({
@@ -87,7 +172,10 @@ export class ZapparARController {
 
       this.pipeline = new ZapparThree.Pipeline();
       this.pipeline.glContextSet(this.renderer.getContext());
-      this.camera = new ZapparThree.Camera(this.pipeline);
+      this.camera = new ZapparThree.Camera({
+        pipeline: this.pipeline,
+        rearCameraSource: this.cameraVideo,
+      });
       this.camera.profile = ZapparThree.CameraProfile.High;
       this.camera.rearCameraMirrorMode = ZapparThree.CameraMirrorMode.None;
       this.camera.handleColorSpace(this.renderer);
@@ -105,8 +193,6 @@ export class ZapparARController {
       this.tracker.onVisible.bind(() => this.handleTargetFound());
       this.tracker.onNotVisible.bind(() => this.handleTargetLost());
 
-      const granted = await ZapparThree.permissionRequest();
-      if (!granted) throw new ARControllerError('CAMERA_ACCESS_FAILED');
       this.camera.start(false);
 
       this.renderer.setAnimationLoop(() => {
@@ -189,6 +275,9 @@ export class ZapparARController {
     this.tracker?.destroy();
     this.camera?.stop();
     this.camera?.dispose();
+    this.cameraVideo?.pause();
+    if (this.cameraVideo) this.cameraVideo.srcObject = null;
+    this.cameraStream?.getTracks().forEach((track) => track.stop());
     this.pipeline?.destroy();
     this.renderer?.dispose();
     this.container.replaceChildren();
@@ -199,5 +288,7 @@ export class ZapparARController {
     this.renderer = null;
     this.scene = null;
     this.videoTarget = null;
+    this.cameraStream = null;
+    this.cameraVideo = null;
   }
 }

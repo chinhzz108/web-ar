@@ -5,7 +5,7 @@ title Mầm Book WebAR - USB
 
 set "AR_ROOT=%~dp0"
 set "AR_PORT=5173"
-set "AR_URL=http://127.0.0.1:%AR_PORT%/?engine=zappar&fresh=bat"
+set "AR_URL=http://localhost:%AR_PORT%/?engine=zappar&fresh=bat"
 set "AR_ADB=%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"
 
 echo.
